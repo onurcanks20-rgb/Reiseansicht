@@ -65,6 +65,7 @@ Kostentracker.module({
         function show(id) {
             dependencies.refreshTravelMode?.();
             id = dependencies.travelModeRoute?.(id) || id;
+            const changingView = document.getElementById(id)?.classList.contains("hidden");
             context.session.kostentrackerRememberView?.(id);
             dependencies.rememberCurrentView?.(id);
 
@@ -126,6 +127,8 @@ Kostentracker.module({
                 const datum = document.getElementById("datum");
                 if (datum) datum.value = "";
             }
+            // Ausgangsposition vorher für die Zurückwisch-Geste sichern.
+            if (changingView) window.scrollTo(0, 0);
         }
 
         function goHome() {
