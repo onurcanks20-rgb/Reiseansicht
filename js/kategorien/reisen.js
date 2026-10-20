@@ -1,10 +1,10 @@
 Kostentracker.module({
   "id": "js/kategorien/reisen.js",
   "dependencies": [
+    "appendEmptyAction",
     "addItem",
     "appendDateGroupHeader",
     "applyLetzteReiseKategorie",
-    "isTravelMode", "activeHomeTrips", "openTravelOverview",
     "beginUndoDelete",
     "closeStartQuickAdd",
     "datumZeitwert",
@@ -122,6 +122,14 @@ Kostentracker.module({
                 );
             }).sort((a,b) => a.localeCompare(b, "de"));
 
+            if (!laender.length) {
+                const empty=document.createElement('div');empty.className='empty-state';
+                const title=document.createElement('div');title.className='empty-state-title';title.textContent=suche?'Keine passende Reise':'Noch keine Reisen';empty.appendChild(title);
+                div.appendChild(empty);
+                if(!suche)dependencies.appendEmptyAction(empty,'reisen');
+                return;
+            }
+
             for (const land of laender) {
 
                 let sum = 0;
@@ -235,9 +243,6 @@ Kostentracker.module({
         }
 
         function openLand(l) {
-            if (dependencies.isTravelMode?.() && !dependencies.activeHomeTrips().includes(l)) {
-                dependencies.openTravelOverview(); return;
-            }
 
             // 🔥 WICHTIG: alten Zustand sauber zurücksetzen
             context.session.state.editLandName = null;
