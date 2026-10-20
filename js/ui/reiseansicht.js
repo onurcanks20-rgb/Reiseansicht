@@ -1,6 +1,6 @@
 Kostentracker.module({
   "id": "js/ui/reiseansicht.js",
-  "dependencies": ["activeHomeTrips", "heuteISO", "formatBetragText", "formatDatum", "parseBetrag", "reiseGesamtAusgegeben", "openLand", "openHomeTravelExpense", "goHome", "show", "renderGrafik"],
+  "dependencies": ["getReiseCurrency", "reiseBudgetPresentation", "reiseBudgetRateState", "toggleReiseBudgetCurrency", "requestReiseBudgetRate", "activeHomeTrips", "heuteISO", "formatBetragText", "formatDatum", "parseBetrag", "reiseGesamtAusgegeben", "openLand", "openHomeTravelExpense", "goHome", "show", "renderGrafik"],
   "session": ["aktuellesLand"],
   "read": ["Reisen", "ReisenMeta"], "write": [], "replace": false
 }, (context, dependencies) => {
@@ -61,23 +61,69 @@ function button(text, fn, className = 'travel-mode-action') {
     const b = node('button', className, text); b.type = 'button'; b.addEventListener('click', fn); return b;
 }
 function money(value) { return dependencies.formatBetragText(value); }
+function travelHomeMoney(value, display) {
+    if (display.currency === 'EUR') return money(value);
+    return new Intl.NumberFormat('de-DE', {style:'currency',currency:display.currency,currencyDisplay:'code'}).format(value * display.rate);
+}
+async function toggleTravelHomeCurrency(country) {
+    if (!isTravelMode() || !travelModeTrips().includes(country)) return;
+    await dependencies.toggleReiseBudgetCurrency(country);
+}
+function prepareTravelHomeRates() {
+    if (!isTravelMode()) return;
+    for (const country of travelModeTrips()) {
+        if (context.repository.view.ReisenMeta[country]?.budgetCurrencyDisplay === 'local') dependencies.requestReiseBudgetRate(country);
+    }
+}
+function renderTravelHomeRateNote(country, display) {
+    const note = node('div','travel-mode-rate-note');
+    const status = dependencies.reiseBudgetRateState(country);
+    let text;
+    if (display.record) {
+        text = `1 € = ${new Intl.NumberFormat('de-DE',{maximumFractionDigits:6}).format(display.record.rate)} ${display.quote} · Kurs vom ${dependencies.formatDatum(display.record.date)} · Richtwert`;
+        if (navigator.onLine === false) text += ' · Offline';
+        else if (status === 'loading') text += ' · wird aktualisiert';
+        else if (status === 'error') text += ' · gespeicherter Kurs';
+        else if (status === 'storage') text += ' · neuer Kurs nicht gespeichert';
+    } else if (status === 'loading') text = 'Kurs wird geladen · vorerst EUR.';
+    else if (navigator.onLine === false) text = 'Offline: kein Kurs gespeichert · Anzeige in EUR.';
+    else if (status === 'storage') text = 'Kurs konnte nicht gespeichert werden · Anzeige in EUR.';
+    else text = 'Kein Kurs verfügbar · Anzeige in EUR.';
+    note.appendChild(node('span','',text));
+    const refresh = button('↻', () => dependencies.requestReiseBudgetRate(country,true), 'travel-mode-rate-refresh');
+    refresh.disabled = status === 'loading';
+    refresh.setAttribute('aria-label', 'Wechselkurs für ' + country + ' aktualisieren');
+    note.appendChild(refresh); return note;
+}
 function renderTravelHome() {
     const host = el('travelModeHome'); if (!host) return;
     host.replaceChildren();
     for (const country of travelModeTrips()) {
         const meta = context.repository.view.ReisenMeta[country];
         const stats = travelModeStats(country);
+        const display = dependencies.reiseBudgetPresentation(country);
+        const format = amount => travelHomeMoney(amount, display);
+        const requestedLocal = meta.budgetCurrencyDisplay === 'local';
         const card = node('article', 'travel-mode-card');
         card.appendChild(node('span', 'travel-mode-eyebrow', 'DEINE REISE'));
         card.appendChild(node('h2', '', country));
         card.appendChild(node('p', 'travel-mode-muted', `${dependencies.formatDatum(meta.von)} – ${dependencies.formatDatum(meta.bis)}`));
-        card.appendChild(node('span', 'travel-mode-muted', stats.budget > 0 ? 'Reisebudget übrig · EUR' : 'Ausgegeben · EUR'));
-        card.appendChild(node('strong', 'travel-mode-remaining', money(stats.budget > 0 ? stats.remaining : stats.spent)));
+        const heading = node('div','travel-mode-currency-heading');
+        heading.appendChild(node('span', 'travel-mode-muted', (stats.budget > 0 ? 'Reisebudget übrig · ' : 'Ausgegeben · ') + display.currency));
+        if (dependencies.getReiseCurrency(country) && display.quote !== 'EUR') {
+            const toggle = button(requestedLocal ? display.quote + ' ⇄ EUR' : 'EUR ⇄ ' + display.quote, () => toggleTravelHomeCurrency(country), 'travel-mode-currency-toggle');
+            toggle.setAttribute('aria-label','Anzeige für ' + country + ' auf ' + (requestedLocal ? 'EUR' : display.quote) + ' umstellen');
+            toggle.setAttribute('aria-pressed',String(requestedLocal));
+            heading.appendChild(toggle);
+        }
+        card.appendChild(heading);
+        card.appendChild(node('strong', 'travel-mode-remaining', format(stats.budget > 0 ? stats.remaining : stats.spent)));
         const facts = node('div', 'travel-mode-facts');
         for (const [label, amount] of [['Budget',stats.budget],['Ausgegeben',stats.spent],['Heute',stats.today]]) {
-            const fact = node('div'); fact.append(node('span','travel-mode-muted',label),node('strong','',money(amount))); facts.appendChild(fact);
+            const fact = node('div'); fact.append(node('span','travel-mode-muted',label),node('strong','',format(amount))); facts.appendChild(fact);
         }
         card.appendChild(facts);
+        if (requestedLocal && display.quote !== 'EUR') card.appendChild(renderTravelHomeRateNote(country,display));
         card.appendChild(button('＋ Ausgabe hinzufügen', () => dependencies.openHomeTravelExpense(country)));
         card.appendChild(button('Buchungen ansehen ›', () => openTravelCountry(country), 'travel-mode-link'));
         host.appendChild(card);
@@ -182,12 +228,14 @@ function refreshTravelMode() {
         el('travelModeHome')?.classList.toggle('hidden',!active);
         el('travelModeGraphic')?.classList.toggle('hidden',!active);
         if (active) {
-            renderTravelHome(); renderTravelCountries();
+            renderTravelHome(); renderTravelCountries(); prepareTravelHomeRates();
             if (visible('grafikView')) renderTravelGraphic();
             if (visible('land') && !trips.includes(context.session.aktuellesLand) && !travelModeHasDraft()) openTravelOverview();
         } else if (visible('travelOverviewView') && !travelModeHasDraft()) dependencies.goHome();
     } finally { refreshing = false; }
 }
+window.addEventListener('online',prepareTravelHomeRates);
+window.addEventListener('offline',() => {if(isTravelMode())renderTravelHome();});
 // Vorhandener Tageswechsel-/Fokus-Refresh ruft refreshTravelMode über renderHomeTrips auf.
-return { isTravelMode, travelModeTrips, travelModeEntries, travelModeStats, renderTravelHome, renderTravelCountries, openTravelCountry, openTravelOverview, setTravelMode, travelModeRoute, toggleTravelGraphicCountry, renderTravelGraphic, refreshTravelMode };
+return { travelHomeMoney, toggleTravelHomeCurrency, prepareTravelHomeRates, renderTravelHomeRateNote, isTravelMode, travelModeTrips, travelModeEntries, travelModeStats, renderTravelHome, renderTravelCountries, openTravelCountry, openTravelOverview, setTravelMode, travelModeRoute, toggleTravelGraphicCountry, renderTravelGraphic, refreshTravelMode };
 });
