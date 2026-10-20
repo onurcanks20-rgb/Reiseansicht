@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="app-version" content="travel-icons-v1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kosten Reise">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Kostentracker Reise">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preload" href="icon-192.png" as="image" fetchpriority="high">
+    <link rel="preload" href="./js/app/ladebildschirm.js?v=travel-icons-v1" as="script">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+    <title>Kostentracker Reise</title>
+
+    <script src="./js/core/dienste.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+    <script src="./js/app/design-start.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+
+    <link rel="stylesheet" href="./css/app.css?v=travel-icons-v1" media="print" data-app-style onload="this.dataset.loaded='true'" onerror="this.dataset.failed='true'">
+
+    <style id="bootSplashStyle">
+      /* Paint the page canvas and safe-area background before app.css loads. */
+      :root {--boot-canvas:#000;color-scheme:dark;}
+      @media(prefers-color-scheme:light){:root:not([data-theme]) {--boot-canvas:#f2f2f7;color-scheme:light;}}
+      :root[data-theme="light"] {--boot-canvas:#f2f2f7;color-scheme:light;}
+      :root[data-theme="dark"] {--boot-canvas:#000;color-scheme:dark;}
+      html,body {background:var(--bg,var(--boot-canvas));}
+      body {margin:0;}
+
+      .boot-splash {position:fixed;inset:0;z-index:30000;display:grid;place-items:center;background:#000;opacity:1;transition:opacity 280ms cubic-bezier(.4,0,.2,1);will-change:opacity;transform:translateZ(0);backface-visibility:hidden;}
+      :root[data-theme="light"] .boot-splash {background:#f2f2f7;}
+      .boot-splash-logo {position:absolute;left:50%;top:var(--boot-logo-center,50%);transform:translate(-50%,-50%);display:grid;place-items:center;width:104px;height:104px;opacity:0;will-change:opacity;transition:opacity 160ms ease-out;}
+      .boot-splash-logo.boot-logo-visible {opacity:1;}
+      .boot-covering body > :not(#bootSplash):not(script) {visibility:hidden;}
+      .boot-splash-error {position:absolute;left:20px;right:20px;top:calc(var(--boot-logo-center,50%) + 84px);text-align:center;color:#fff;font:16px -apple-system,BlinkMacSystemFont,sans-serif;}
+      :root[data-theme="light"] .boot-splash-error {color:#111;}
+      .boot-splash-error button {padding:12px 20px;border:0;border-radius:12px;background:#3498db;color:#fff;font-size:16px;}
+      .boot-splash img {display:block;width:104px;height:104px;object-fit:contain;border-radius:24px;}
+      .boot-splash [hidden] {display:none;}
+      .boot-splash-fallback {font-size:72px;line-height:1;}
+      .boot-splash-leaving {opacity:0;pointer-events:none;}
+      @media(prefers-reduced-motion:reduce){.boot-splash,.boot-splash-logo {transition:none;}}
+    </style>
+    <noscript><style>.boot-splash {display:none;}</style></noscript>
+</head>
+
+<body>
+<div id="bootSplash" class="boot-splash" role="status" aria-label="Kostentracker wird geladen">
+  <div id="bootSplashLogo" class="boot-splash-logo"><img id="bootSplashIcon" src="icon-192.png" alt="" width="104" height="104" decoding="async" fetchpriority="high" hidden><span id="bootSplashFallback" class="boot-splash-fallback" hidden aria-hidden="true">💸</span></div>
+  <div id="bootSplashError" class="boot-splash-error" hidden><p>App konnte nicht gestartet werden.</p><button type="button" onclick="location.reload()">Erneut laden</button></div>
+</div>
+<script src="./js/app/ladebildschirm.js?v=travel-icons-v1"></script>
+
+
+    <!-- ===================== HOME ===================== -->
+    <div id="travelModeBar" class="travel-mode-bar hidden"><span>✈️ Reiseansicht</span><button type="button" onclick="setTravelMode(false)">Alltag anzeigen</button></div>
+    <div id="travelOverviewView" class="hidden"><div class="container app-shell"><div class="topbar"><button type="button" class="back-btn" onclick="goHome()" aria-label="Zurück"><span class="back-icon"></span></button><h2>Deine Reisen</h2></div><div id="travelOverviewCountries"></div></div></div>
+    <div id="home">
+        <div class="container app-shell">
+            <div class="topbar">
+                <h2>💸 Kostentracker</h2>
+                <button class="icon-btn" onclick="openSettings()" aria-label="Einstellungen">⚙️</button>
+            </div>
+
+            <button id="travelModeToggle" type="button" class="travel-mode-toggle hidden" onclick="setTravelMode(true)">✈️ Reiseansicht einschalten</button>
+            <div id="travelModeHome" class="hidden" aria-label="Reiseübersicht"></div>
+            <button id="homeSyncStatus" type="button" class="home-sync-status" onclick="openServerSettings()" aria-label="Synchronisierungsstatus – Anmeldung öffnen">Nur auf diesem Gerät</button>
+
+            <div class="hero-card">
+                <div class="hero-label">Frei verfügbar</div>
+                <div id="homeBudgetVerfuegbar" class="hero-amount">0.00 €</div>
+                <button id="freiDetailsToggle" class="link-button" onclick="toggleFreiDetails()">Details anzeigen ›</button>
+
+                <div id="freiDetails" class="compact-details hidden">
+                    <div class="calc-row"><span>Aktuelle Periode</span><span id="homePeriodDates">–</span></div>
+                    <div class="calc-row"><span>Startgehalt</span><span id="homeBudgetStart">0.00 €</span></div>
+                    <div class="calc-row"><span>Einnahmen</span><span id="homeBudgetEinnahmen">+0.00 €</span></div>
+                    <div class="calc-row"><span>Fixkosten</span><span id="homeBudgetLaufend">0.00 €</span></div>
+                    <div class="calc-row"><span>Versicherungen</span><span id="homeBudgetVers">0.00 €</span></div>
+                    <div class="calc-row"><span>Geplante Ausgaben</span><span id="homeBudgetGeplant">0.00 €</span></div>
+                    <div class="calc-row"><span>Investieren</span><span id="homeBudgetInvestieren">0.00 €</span></div>
+                    <div class="calc-row"><span>Sparen vorgesehen</span><span id="homeBudgetSparenPlan">0.00 €</span></div>
+                    <div class="calc-row"><span>Gespart aktuell</span><span id="homeBudgetGespart">0.00 €</span></div>
+                    <div class="calc-row"><span>Haushalt bisher</span><span id="homeBudgetHaushalt">0.00 €</span></div>
+                    <div class="calc-row"><span>Freizeit bisher</span><span id="homeBudgetFreizeit">0.00 €</span></div>
+                    <div class="calc-row total"><span>Frei verfügbar</span><span id="homeBudgetVerfuegbarDetail">0.00 €</span></div>
+                    <div class="calc-row"><span>Noch kommende Abbuchungen</span><span id="homeFaelligGesamt">0.00 €</span></div>
+                    <div class="detail-note">Die kommenden Abbuchungen sind im frei verfügbaren Betrag bereits berücksichtigt.</div>
+                </div>
+            </div>
+
+
+            <div id="homeActiveTrips" class="home-active-trips hidden" aria-label="Aktuelle Reisen"></div>
+
+            <div class="week-summary-card" onclick="openWeekPreview()" role="button" tabindex="0" aria-label="Wochenbudget und Vorschau anzeigen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openWeekPreview();}">
+                <div class="week-summary-head">
+                    <div>
+                        <div class="week-summary-title">📅 Diese Woche</div>
+                        <div id="homeWeekDates" class="week-summary-dates">Montag – Sonntag</div>
+                    </div>
+                    <div id="homeWeekAmount" class="week-summary-amount">0.00 €</div>
+                </div>
+            </div>
+
+            <div class="salary-row">
+                <span>Nächstes Gehalt</span>
+                <strong id="homeNextSalary">–</strong>
+            </div>
+
+            <div class="salary-row">
+                <span>Gespart</span>
+                <strong id="homeGespart">0,00 €</strong>
+            </div>
+            <div id="homeWarnings" class="hidden"></div>
+
+            <button class="primary-add" onclick="openAddSheet()">＋ Abrechnung hinzufügen</button>
+        </div>
+
+        <div class="bottom-nav">
+            <button class="active" onclick="goHome()"><span class="nav-icon">🏠</span>Start</button>
+            <button onclick="openUebersicht()"><span class="nav-icon">📋</span>Übersicht</button>
+            <button onclick="openGrafik()"><span class="nav-icon">📊</span>Grafik</button>
+        </div>
+    </div>
+
+    <!-- ===================== ÜBERSICHT ===================== -->
+    <div id="uebersichtView" class="hidden">
+        <div class="container app-shell">
+            <div class="topbar">
+                <button class="back-btn" onclick="goHome()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Übersicht</h2>
+                <button class="icon-btn" onclick="openSettings()" aria-label="Einstellungen">⚙️</button>
+            </div>
+
+            <div class="section-label">Mein Budget</div>
+            <div class="overview-card" onclick="openHaushalt()">
+                <div class="overview-card-top"><span class="overview-card-title">🛒 Haushalt</span><strong id="overviewHaushalt">0.00 €</strong></div>
+                <div class="overview-card-sub">Ausgaben im aktuellen Gehaltszeitraum</div>
+            </div>
+            <div class="overview-card" onclick="openFreizeit()">
+                <div class="overview-card-top"><span class="overview-card-title">🎉 Freizeit</span><strong id="overviewFreizeit">0.00 €</strong></div>
+                <div class="overview-card-sub">Ausgehen, Restaurant, Kino und Unternehmungen</div>
+            </div>
+            <div class="overview-card" onclick="openKosten()">
+                <div class="overview-card-top"><span class="overview-card-title">📌 Fixkosten</span><strong id="overviewFixkosten">0.00 €</strong></div>
+                <div class="overview-card-sub">Fest eingeplante Kosten im Gehaltszeitraum</div>
+            </div>
+            <div class="overview-card" onclick="openVersicherungen()">
+                <div class="overview-card-top"><span class="overview-card-title">🛡️ Versicherungen</span><strong id="overviewVersicherungen">0.00 €</strong></div>
+                <div class="overview-card-sub">Fällige Versicherungen im Gehaltszeitraum</div>
+            </div>
+            <div class="overview-card" onclick="openEinnahmen()">
+                <div class="overview-card-top"><span class="overview-card-title">💰 Einnahmen</span><strong id="overviewEinnahmen">+0.00 €</strong></div>
+                <div class="overview-card-sub">Zusätzliche Geldeingänge im Gehaltszeitraum</div>
+            </div>
+            <div class="overview-card" onclick="openGeplanteAusgaben()">
+                <div class="overview-card-top"><span class="overview-card-title">🗓️ Geplante Ausgaben</span><strong id="overviewGeplant">0.00 €</strong></div>
+                <div class="overview-card-sub">Für den aktuellen Gehaltszeitraum reserviert</div>
+            </div>
+            <div class="overview-card" onclick="openSparenInvestieren()">
+                <div class="overview-card-top"><span class="overview-card-title">📈 Sparen & Investieren</span><strong id="overviewSparenInvestieren">0.00 €</strong></div>
+                <div id="overviewSparenInvestierenSub" class="overview-card-sub">Investieren geschützt · Rücklage als Sparpuffer</div>
+            </div>
+
+            <div class="section-label">Separat</div>
+            <div class="overview-card" onclick="openReisen()">
+                <div class="overview-card-top"><span class="overview-card-title">✈️ Reisen</span><strong id="overviewReisen">0.00 €</strong></div>
+                <div class="overview-card-sub">Wird nicht in dein Alltagsbudget eingerechnet</div>
+            </div>
+        </div>
+        <div class="bottom-nav">
+            <button onclick="goHome()"><span class="nav-icon">🏠</span>Start</button>
+            <button class="active" onclick="openUebersicht()"><span class="nav-icon">📋</span>Übersicht</button>
+            <button onclick="openGrafik()"><span class="nav-icon">📊</span>Grafik</button>
+        </div>
+    </div>
+
+    <!-- ===================== GRAFIK ===================== -->
+    <div id="grafikView" class="hidden">
+        <div class="container app-shell">
+            <div class="topbar">
+                <button class="back-btn" onclick="goHome()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Grafik</h2>
+                <button class="icon-btn" onclick="openSettings()" aria-label="Einstellungen">⚙️</button>
+            </div>
+
+            <div id="travelModeGraphic" class="hidden" aria-label="Reiseausgaben"></div>
+            <div class="settings-card grafik-filter-card">
+                <div class="grafik-filter-title">Zeitraum</div>
+                <div id="grafikNormalRangeControls">
+                    <div class="grafik-range-tabs">
+                        <button id="grafikRangeMonth" class="quick-category-btn selected" onclick="grafikSetRange('month',this)">Monat</button>
+                        <button id="grafikRangeSalary" class="quick-category-btn" onclick="grafikSetRange('salary',this)">Gehalt</button>
+                        <button id="grafikRangeCustom" class="quick-category-btn" onclick="grafikSetRange('custom',this)">Frei</button>
+                    </div>
+                    <div id="grafikRangeMonthBox" class="grafik-filter-field"><input id="grafikMonth" type="month" onchange="renderGrafik()"></div>
+                    <div id="grafikRangeSalaryBox" class="grafik-filter-field hidden"><select id="grafikSalaryPeriod" onchange="renderGrafik()"></select></div>
+                    <div id="grafikRangeCustomBox" class="grafik-filter-field hidden">
+                        <div class="date-range grafik-date-range">
+                            <div class="date-field"><label>Von</label><input id="grafikVon" type="date" onchange="renderGrafik()"></div>
+                            <div class="date-field"><label>Bis</label><input id="grafikBis" type="date" onchange="renderGrafik()"></div>
+                        </div>
+                    </div>
+                </div>
+                <button id="grafikCompareToggle" class="grafik-compare-toggle" type="button" onclick="grafikToggleCompare()">⇄ Zeiträume vergleichen</button>
+                <div id="grafikComparePeriods" class="grafik-compare-periods hidden">
+                    <div class="grafik-compare-period">
+                        <div class="grafik-compare-period-title">Zeitraum A</div>
+                        <div class="date-range">
+                            <div class="date-field"><label>Von</label><input id="grafikCompareAVon" type="date" onchange="renderGrafik()"></div>
+                            <div class="date-field"><label>Bis</label><input id="grafikCompareABis" type="date" onchange="renderGrafik()"></div>
+                        </div>
+                    </div>
+                    <div class="grafik-compare-swap">
+                        <button type="button" onclick="grafikSwapComparePeriods()" aria-label="Zeitraum A und B tauschen" title="Zeiträume tauschen">⇄</button>
+                    </div>
+                    <div class="grafik-compare-period">
+                        <div class="grafik-compare-period-title">Zeitraum B</div>
+                        <div class="date-range">
+                            <div class="date-field"><label>Von</label><input id="grafikCompareBVon" type="date" onchange="renderGrafik()"></div>
+                            <div class="date-field"><label>Bis</label><input id="grafikCompareBBis" type="date" onchange="renderGrafik()"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="grafikNormalCategoryCard" class="settings-card grafik-filter-card">
+                <div class="grafik-filter-title">Kategorie</div>
+                <select id="grafikCategory" onchange="grafikCategoryChanged()">
+                    <option value="all">Alle Kategorien</option>
+                    <option value="haushalt">Haushalt</option>
+                    <option value="freizeit">Freizeit</option>
+                    <option value="fixkosten">Fixkosten</option>
+                    <option value="versicherungen">Versicherungen</option>
+                    <option value="einnahmen">Einnahmen</option>
+                    <option value="reisen">Reisen</option>
+                    <option value="geplant">Geplante Ausgaben</option>
+                    <option value="sparen">Sparen &amp; Investieren</option>
+                </select>
+                <div id="grafikSubcategoryWrap" class="hidden grafik-filter-field">
+                    <select id="grafikSubcategory" onchange="renderGrafik()"></select>
+                </div>
+            </div>
+
+            <div id="grafikCompareCategoryCard" class="settings-card grafik-filter-card hidden">
+                <div class="grafik-filter-title">Was möchtest du vergleichen?</div>
+                <div class="grafik-compare-help">Kategorien und Unterkategorien lassen sich frei kombinieren, z. B. Haushalt · Tanken zusammen mit Freizeit · Aktivität.</div>
+                <div id="grafikCompareSelection" class="grafik-compare-select"></div>
+            </div>
+
+            <div id="grafikChartCard" class="settings-card grafik-chart-card">
+                <div class="grafik-chart-head">
+                    <div>
+                        <div id="grafikTitle" class="grafik-chart-title">Ausgaben</div>
+                        <div id="grafikSubtitle" class="grafik-chart-subtitle">–</div>
+                    </div>
+                    <strong id="grafikTotal" class="grafik-total">0,00 €</strong>
+                </div>
+                <div id="grafikChart" class="grafik-chart"></div>
+                <div id="grafikLegend" class="grafik-legend"></div>
+            </div>
+
+            <div id="grafikStats" class="grafik-stats"></div>
+        </div>
+        <div class="bottom-nav">
+            <button onclick="goHome()"><span class="nav-icon">🏠</span>Start</button>
+            <button onclick="openUebersicht()"><span class="nav-icon">📋</span>Übersicht</button>
+            <button class="active" onclick="openGrafik()"><span class="nav-icon">📊</span>Grafik</button>
+        </div>
+    </div>
+
+    <!-- ===================== EINSTELLUNGEN ===================== -->
+    <div id="settingsView" class="hidden">
+        <div class="container">
+            <div class="topbar">
+                <button class="back-btn" onclick="goHome()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Einstellungen</h2>
+            <button class="page-info-button" type="button" onclick="openPageInfo('settingsView')" aria-label="Informationen zu Einstellungen">ⓘ</button>
+            </div>
+
+            <div class="settings-section-head">Allgemein</div>
+            <div class="settings-menu">
+                <button id="appUpdateCheckButton" class="settings-menu-item" type="button" onclick="checkAppUpdate(true)">
+                    <span class="settings-menu-icon">↻</span><span class="settings-menu-main"><span class="settings-menu-title">App aktualisieren</span><span class="settings-menu-sub">Automatisch prüfen und sicher neu laden</span></span><span class="settings-menu-chevron">›</span>
+                </button>
+                <div id="appUpdateStatus" class="settings-note" role="status" aria-live="polite"></div>
+
+                <button class="settings-menu-item" type="button" onclick="openSettingsBudget()">
+                    <span class="settings-menu-icon">💶</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Budget & Gehalt</span><span class="settings-menu-sub">Aktuelles und nächstes Gehalt, Gehaltstag</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+                <button class="settings-menu-item" type="button" onclick="openSettingsQuickAdd()">
+                    <span class="settings-menu-icon">⚡</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Schnelleingabe</span><span class="settings-menu-sub">Bereiche auswählen und Reihenfolge anpassen</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+                <button class="settings-menu-item" type="button" onclick="openSettingsWarnings()">
+                    <span class="settings-menu-icon">🔔</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Erinnerung</span><span class="settings-menu-sub">Große Ausgaben und Hinweise auf der Startseite</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+                <button class="settings-menu-item" type="button" onclick="openMerchantSettings()">
+                    <span class="settings-menu-icon">🏷️</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Händlerzuordnung</span><span class="settings-menu-sub">Automatische Kategorien und eigene Zuordnungen</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+                <button class="settings-menu-item" type="button" onclick="openSettingsDesign()">
+                    <span class="settings-menu-icon">🎨</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Design</span><span id="settingsDesignMenuSub" class="settings-menu-sub">Systemeinstellung verwenden</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+                <button class="settings-menu-item" type="button" onclick="openSettingsGestures()">
+                    <span class="settings-menu-icon">👆</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Gesten</span><span id="settingsGesturesMenuSub" class="settings-menu-sub">Rechts-Swipe: Aus</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+            </div>
+
+            <div class="settings-section-head" style="margin-top:22px;">Daten</div>
+            <div class="settings-menu">
+                <button class="settings-menu-item" type="button" onclick="openGlobalArchiv()">
+                    <span class="settings-menu-icon">📁</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Archiv</span><span class="settings-menu-sub">Alle gespeicherten Einträge durchsuchen und exportieren</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+                <button class="settings-menu-item" type="button" onclick="openServerSettings()">
+                    <span class="settings-menu-icon">🔄</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Anmelden & Datensicherung</span><span class="settings-menu-sub">Persönlicher Zugang, gespeicherte Daten und Mitteilungen</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+                <button class="settings-menu-item" type="button" onclick="openSettingsBackup()">
+                    <span class="settings-menu-icon">💾</span>
+                    <span class="settings-menu-main"><span class="settings-menu-title">Backup</span><span class="settings-menu-sub">Daten in einer Datei sichern oder wiederherstellen</span></span>
+                    <span class="settings-menu-chevron">›</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="serverSettingsView" class="hidden">
+        <div class="container">
+            <div class="topbar">
+                <button class="back-btn" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Anmelden & Datensicherung</h2>
+            <button class="page-info-button" type="button" onclick="openPageInfo('serverSettingsView')" aria-label="Informationen zu Anmelden & Datensicherung">ⓘ</button>
+            </div>
+            <div class="settings-page-card">
+                <h3>Dein persönlicher Zugang</h3>
+                
+                <label for="testServerToken">Persönlicher Zugangscode</label>
+                <input id="testServerToken" oninput="updateServerLoginControls()" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Persönlichen Zugangscode einfügen">
+                <button id="testServerReveal" onclick="toggleTestServerCode()" style="background:#3a3a3c;">Code anzeigen</button>
+                <button id="serverLoginButton" onclick="syncTestServer(true)">Anmelden</button>
+                <div id="serverAccountActions" class="hidden">
+                <button onclick="activateTestServerPush()">🔔 Benachrichtigungen aktivieren</button>
+                <div id="serverNotificationStatus" class="settings-note" style="margin:12px 0;"></div>
+                <button onclick="restoreTestServerBackup()" style="background:#3a3a3c;">Daten wiederherstellen</button>
+                </div>
+                <div id="testServerStatus" class="server-login-status" role="status" aria-live="polite" style="margin-top:16px;">Noch nicht angemeldet.</div>
+            </div>
+
+            <section id="serverRestoreNotice" class="server-restore-notice hidden" aria-labelledby="serverRestoreNoticeTitle">
+                <h3 id="serverRestoreNoticeTitle">Deine gespeicherten Daten sind da</h3>
+                <p>Stelle deine bisherigen Einträge wieder her, um neue Zahlungen zu übernehmen.</p>
+                <button type="button" onclick="showServerRestorePrompt(true)">Daten wiederherstellen</button>
+            </section>
+            <div class="settings-page-card" id="travelPaymentTests">
+                <h3>Reisezahlungen testen</h3>
+                <div class="test-mode-label">Nur Testversion</div>
+                <label for="travelPaymentTestLand">Testreise</label><select id="travelPaymentTestLand" onchange="updateTravelPaymentTestDate()"><option value="">Reise auswählen</option></select>
+                <label for="travelPaymentTestDate">Zahlungsdatum</label><input id="travelPaymentTestDate" type="date">
+                <button onclick="simulateTravelPayment('eur')">Nur Eurobetrag testen</button>
+                <button onclick="simulateTravelPayment('both')">Euro + Landeswährung testen</button>
+                <button onclick="simulateTravelPayment('foreign')">Nur Landeswährung testen</button>
+                <button onclick="removeTravelPaymentTests()" style="background:#3a3a3c">Diese Testzahlungen entfernen</button>
+                <div id="travelPaymentTestStatus" class="settings-note" role="status"></div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- ===================== EINSTELLUNGEN: BUDGET & GEHALT ===================== -->
+    <div id="settingsBudgetView" class="hidden">
+        <div class="container">
+            <div class="topbar">
+                <button class="back-btn" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Budget & Gehalt</h2>
+            <button class="page-info-button" type="button" onclick="openPageInfo('settingsBudgetView')" aria-label="Informationen zu Budget & Gehalt">ⓘ</button>
+            </div>
+            <div class="settings-page-card">
+                <label for="startgehaltInput">Startgehalt / Startbudget</label>
+                <input id="startgehaltInput" type="text" inputmode="decimal" min="0" step="0.01" placeholder="z. B. 2500">
+                <button onclick="saveStartgehalt()">Startgehalt speichern</button>
+                
+            </div>
+            <div class="settings-page-card">
+                <h3>Nächstes Gehalt</h3>
+                
+                <div class="date-range">
+                    <div class="date-field">
+                        <label for="nextSalaryDateInput">Erwartetes Datum</label>
+                        <input id="nextSalaryDateInput" type="date">
+                    </div>
+                    <div class="date-field">
+                        <label for="nextSalaryAmountInput">Betrag</label>
+                        <input id="nextSalaryAmountInput" type="text" inputmode="decimal" placeholder="z. B. 2750">
+                    </div>
+                </div>
+                <button onclick="saveNextSalaryPlan()">Nächstes Gehalt speichern</button>
+                <button onclick="clearNextSalaryPlan()" style="background:#3a3a3c;">Angaben löschen</button>
+                <div id="nextSalarySettingsStatus" class="settings-note" style="margin-top:8px;"></div>
+            </div>
+            <div class="settings-page-card">
+                <label for="gehaltstagInput">Regulärer Gehaltstag</label>
+                <input id="gehaltstagInput" type="number" min="1" max="31" value="26">
+                <button onclick="saveGehaltstag()">Gehaltstag speichern</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsMerchantView" class="hidden">
+      <div class="container">
+        <div class="topbar"><button class="back-btn" type="button" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button><h2 style="flex:1;">Händlerzuordnung</h2><button class="page-info-button" type="button" onclick="openPageInfo('settingsMerchantView')" aria-label="Informationen zur Händlerzuordnung">ⓘ</button></div>
+        <div class="settings-page-card">
+          <h3>Zuordnung hinzufügen</h3>
+          <label for="merchantRuleName">Händlername</label><input id="merchantRuleName" maxlength="200" placeholder="z. B. Little Tokyo" autocomplete="off">
+          <label for="merchantRuleArea">Bereich</label><select id="merchantRuleArea" onchange="updateMerchantRuleCategories()"><option value="">Bereich auswählen</option><option value="Haushalt">Haushalt</option><option value="Freizeit">Freizeit</option></select>
+          <label for="merchantRuleCategory">Kategorie</label><select id="merchantRuleCategory"><option value="">Kategorie auswählen</option></select>
+          <button id="merchantRuleSave" type="button" onclick="saveMerchantRule()">Zuordnung speichern</button><div id="merchantRuleStatus" class="settings-note" role="status" aria-live="polite"></div>
+        </div>
+        <div class="settings-page-card"><h3>Eigene Zuordnungen</h3><div id="merchantRuleList"></div></div>
+        <div class="settings-page-card"><details><summary>Automatisch erkannte Händler</summary><div id="merchantBuiltinList"></div></details></div>
+      </div>
+    </div>
+
+    <!-- ===================== EINSTELLUNGEN: SCHNELLEINGABE ===================== -->
+    <div id="settingsQuickAddView" class="hidden">
+        <div class="container">
+            <div class="topbar">
+                <button class="back-btn" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Schnelleingabe</h2>
+            <button class="page-info-button" type="button" onclick="openPageInfo('settingsQuickAddView')" aria-label="Informationen zu Schnelleingabe">ⓘ</button>
+            </div>
+            <div class="settings-page-card">
+                
+                <div id="quickAddSettingsList" class="quick-fav-list"></div>
+            </div>
+            <div class="settings-page-card">
+                <div style="font-weight:750;font-size:16px;">Schnellbeträge</div>
+                
+                <div class="quick-amount-settings-grid">
+                    <input id="quickAmount1" type="text" inputmode="decimal" aria-label="Schnellbetrag 1">
+                    <input id="quickAmount2" type="text" inputmode="decimal" aria-label="Schnellbetrag 2">
+                    <input id="quickAmount3" type="text" inputmode="decimal" aria-label="Schnellbetrag 3">
+                    <input id="quickAmount4" type="text" inputmode="decimal" aria-label="Schnellbetrag 4">
+                </div>
+                <button onclick="saveQuickAmounts()">Schnellbeträge speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== EINSTELLUNGEN: WARNUNGEN ===================== -->
+    <div id="settingsWarningsView" class="hidden">
+        <div class="container">
+            <div class="topbar">
+                <button class="back-btn" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Erinnerung</h2>
+            <button class="page-info-button" type="button" onclick="openPageInfo('settingsWarningsView')" aria-label="Informationen zu Erinnerung">ⓘ</button>
+            </div>
+            <div class="settings-page-card">
+                <div class="settings-switch-row">
+                    <span class="switch-label">Automatische Erinnerung</span>
+                    <button id="warnungenAktiv" type="button" class="settings-switch-button" role="switch" aria-checked="true" onclick="toggleWarnungenAktiv()" aria-label="Automatische Erinnerung an oder aus">
+                        <span class="ios-switch on" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div id="warnGlobalFields">
+                    <div class="warning-settings-grid">
+                        <div><label for="warnSchwelle">Ab Betrag</label><input id="warnSchwelle" type="text" inputmode="decimal" placeholder="100"></div>
+                        <div><label for="warnTage">Erinnerungszeit (Tage)</label><input id="warnTage" type="number" min="0" max="365" placeholder="14"></div>
+                    </div>
+                    
+                    <div style="font-weight:700;margin-top:16px;">Automatisch berücksichtigen</div>
+                    <div id="warnKategorieGrid" class="warning-cat-grid"></div>
+                    <button onclick="saveWarnSettings()" style="margin-top:14px;">Erinnerung speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== EINSTELLUNGEN: GESTEN ===================== -->
+    <div id="settingsGesturesView" class="hidden">
+        <div class="container">
+            <div class="topbar">
+                <button class="back-btn" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Gesten</h2>
+            <button class="page-info-button" type="button" onclick="openPageInfo('settingsGesturesView')" aria-label="Informationen zu Gesten">ⓘ</button>
+            </div>
+            <div class="settings-page-card">
+                <label for="rightSwipeAction">Nach rechts wischen</label>
+                <select id="rightSwipeAction" onchange="setRightSwipeAction(this.value)">
+                    <option value="aus">Aus</option>
+                    <option value="erneut">⧉ Kopieren</option>
+                    <option value="ausblenden">👁️‍🗨️ Ausblenden</option>
+                    <option value="bearbeiten">✏️ Bearbeiten</option>
+                    <option value="verschieben">↪️ Verschieben</option>
+                </select>
+                
+            </div>
+            <div class="settings-page-card">
+                <div style="font-weight:750;font-size:16px;">Ausgeblendete Einträge</div>
+                
+                <button type="button" onclick="openHiddenArchive()" style="background:#3a3a3c;">👁️‍🗨️ Ausgeblendete verwalten</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== EINSTELLUNGEN: DESIGN ===================== -->
+    <div id="settingsDesignView" class="hidden">
+        <div class="container">
+            <div class="topbar">
+                <button class="back-btn" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Design</h2>
+            <button class="page-info-button" type="button" onclick="openPageInfo('settingsDesignView')" aria-label="Informationen zu Design">ⓘ</button>
+            </div>
+            <div class="settings-page-card">
+                
+                <div class="design-choice-list">
+                    <button type="button" class="design-choice" data-design-mode="system" onclick="setDesignMode('system')">
+                        <span class="design-choice-main"><span class="design-choice-title">Automatisch</span><span class="design-choice-sub">Folgt der Systemeinstellung</span></span><span class="design-choice-check"></span>
+                    </button>
+                    <button type="button" class="design-choice" data-design-mode="dunkel" onclick="setDesignMode('dunkel')">
+                        <span class="design-choice-main"><span class="design-choice-title">Dunkel</span><span class="design-choice-sub">Immer dunkles Erscheinungsbild</span></span><span class="design-choice-check"></span>
+                    </button>
+                    <button type="button" class="design-choice" data-design-mode="hell" onclick="setDesignMode('hell')">
+                        <span class="design-choice-main"><span class="design-choice-title">Hell</span><span class="design-choice-sub">Immer helles Erscheinungsbild</span></span><span class="design-choice-check"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="settings-page-card">
+                <div class="accent-picker-title">Button-, Schalter- & Hakenfarben</div>
+                
+                <div class="action-color-grid">
+                    <div class="action-color-row"><span>Alle Buttons, Schalter & Haken</span><input id="actionColorCommon" type="color" value="#3498db" aria-label="Alle Buttons, Schalter und Haken färben" oninput="previewCommonActionColor(this.value)"></div>
+                    <div class="action-color-row"><span>＋ Hinzufügen / Speichern</span><input id="actionColorAdd" type="color" value="#3498db" aria-label="Farbe für Hinzufügen und Speichern" oninput="previewActionColor('hinzufuegen',this.value)"></div>
+                    <div class="action-color-row"><span>✏️ Bearbeiten</span><input id="actionColorEdit" type="color" value="#3498db" aria-label="Farbe für Bearbeiten" oninput="previewActionColor('bearbeiten',this.value)"></div>
+                    <div class="action-color-row"><span>↪️ Verschieben</span><input id="actionColorMove" type="color" value="#3498db" aria-label="Farbe für Verschieben" oninput="previewActionColor('verschieben',this.value)"></div>
+                    <div class="action-color-row"><span>◉ Schalter & Haken</span><input id="actionColorSwitch" type="color" value="#3498db" aria-label="Farbe für Schalter und Haken" oninput="previewActionColor('schalter',this.value)"></div>
+                </div>
+                
+                <div class="action-color-save-row">
+                    <button type="button" class="action-color-save-btn" onclick="saveActionColorsFromInputs()">Farben speichern</button>
+                    <button type="button" class="accent-reset-btn" onclick="resetActionColors()">Standardfarbe zurücksetzen</button>
+                </div>
+                <div id="actionColorStatus" class="action-color-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== EINSTELLUNGEN: BACKUP ===================== -->
+    <div id="settingsBackupView" class="hidden">
+        <div class="container">
+            <div class="topbar">
+                <button class="back-btn" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 style="flex:1;">Backup</h2>
+            <button class="page-info-button" type="button" onclick="openPageInfo('settingsBackupView')" aria-label="Informationen zu Backup">ⓘ</button>
+            </div>
+            <div class="settings-page-card">
+                <h3>Daten sichern</h3>
+                
+                <button onclick="exportBackup()">⬇️ Backup erstellen</button>
+            </div>
+            <div class="settings-page-card">
+                <h3>Backup wiederherstellen</h3>
+                <p class="action-notice">Ersetzt die Daten auf diesem Gerät.</p>
+                <button onclick="document.getElementById('backupImportInput')?.click()" style="background:#3a3a3c;">⬆️ Backup auswählen</button>
+                <input id="backupImportInput" type="file" accept="application/json,.json" class="hidden" onchange="importBackup(event)">
+                <div id="backupStatus" class="settings-note" style="margin-top:10px;"></div>
+            </div>
+            <div class="settings-page-card">
+                <h3>Alle Einträge löschen</h3>
+                <p class="action-notice">Alle Einträge werden gelöscht.</p>
+                <button type="button" onclick="exportBackup()" style="background:#3a3a3c;">⬇️ Vorher Backup erstellen</button>
+                <button type="button" onclick="deleteAllAppEntries()" style="background:#c0392b;">🗑️ Alle Einträge löschen</button>
+                <div id="deleteAllEntriesStatus" class="settings-note" role="status" aria-live="polite" style="margin-top:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== ZENTRALES ARCHIV ===================== -->
+    <div id="globalArchivView" class="hidden">
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openSettings()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Archiv</h2>
+                
+            <button class="page-info-button" type="button" onclick="openPageInfo('globalArchivView')" aria-label="Informationen zu Archiv">ⓘ</button>
+            </div>
+
+            <div class="archive-filter-card">
+                <input id="globalArchivSuche" class="list-search" type="search" placeholder="🔎 Einträge durchsuchen" oninput="renderGlobalArchiv()" style="margin-top:0;">
+                <div class="archive-filter-grid">
+                    <select id="globalArchivBereich" onchange="renderGlobalArchiv()">
+                        <option value="alle">Alle Bereiche</option>
+                        <option value="haushalt">Haushalt</option>
+                        <option value="freizeit">Freizeit</option>
+                        <option value="fixkosten">Fixkosten</option>
+                        <option value="versicherungen">Versicherungen</option>
+                        <option value="einnahmen">Einnahmen</option>
+                        <option value="reisen">Reisen</option>
+                    </select>
+                    <select id="globalArchivJahr" onchange="renderGlobalArchiv()"><option value="alle">Alle Jahre</option></select>
+                    <select id="globalArchivSichtbarkeit" onchange="renderGlobalArchiv()">
+                        <option value="alle">Alle Einträge</option>
+                        <option value="sichtbar">Nur sichtbar</option>
+                        <option value="ausgeblendet">Nur ausgeblendet</option>
+                    </select>
+                    <div class="archive-date-field">
+                        <label for="globalArchivVon">Von</label>
+                        <input id="globalArchivVon" type="date" aria-label="Von" onchange="renderGlobalArchiv()">
+                    </div>
+                    <div class="archive-date-field">
+                        <label for="globalArchivBis">Bis</label>
+                        <input id="globalArchivBis" type="date" aria-label="Bis" onchange="renderGlobalArchiv()">
+                    </div>
+                </div>
+                <button onclick="resetGlobalArchivFilter()" style="background:#3a3a3c;">Filter zurücksetzen</button>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+                    <button onclick="exportGlobalArchiv()" style="margin:0;">⬇️ Exportieren</button>
+                    <button onclick="document.getElementById('globalArchivImportInput')?.click()" style="margin:0;background:#3a3a3c;">⬆️ Importieren</button>
+                </div>
+                <input id="globalArchivImportInput" type="file" accept="application/json,.json" class="hidden" onchange="importGlobalArchiv(event)">
+                <div id="globalArchivTransferStatus" class="settings-note" style="margin-top:10px;">Exportiert die aktuell gefilterten Einträge als CSV für Excel/Numbers und als JSON für einen späteren Re-Import.</div>
+            </div>
+            <div id="globalArchivListe"></div>
+        </div>
+    </div>
+
+    <!-- ===================== NÄCHSTES GEHALT BESTÄTIGEN ===================== -->
+    <div id="nextSalaryPromptSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) snoozeNextSalaryPrompt()">
+        <div class="add-sheet">
+            <h3>Ist dein Gehalt angekommen?</h3>
+            <div id="nextSalaryPromptText" class="settings-note" style="font-size:14px;margin:-4px 0 14px;line-height:1.5;"></div>
+            <button type="button" onclick="confirmNextSalaryArrival()">✓ Ja, Gehalt ist da</button>
+            <button type="button" onclick="editNextSalaryFromPrompt()" style="background:#3a3a3c;">📅 Datum ändern</button>
+            <button type="button" onclick="snoozeNextSalaryPrompt()" style="background:#3a3a3c;">Später beantworten</button>
+        </div>
+    </div>
+
+    <!-- ===================== WOCHENBUDGET VORSCHAU ===================== -->
+    <div id="weekPreviewSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) closeWeekPreview()">
+        <div class="add-sheet">
+            <div class="page-info-heading"><h3>Wochenbudget</h3><button class="page-info-button" type="button" onclick="openPageInfo('weekPreviewSheet')" aria-label="Informationen zu Wochenbudget">ⓘ</button></div>
+            
+            <div id="weekPreviewList" class="week-preview-list"></div>
+            <div class="week-preview-total"><span>Noch frei bis Gehalt</span><span id="weekPreviewTotal">0,00 €</span></div>
+            <button onclick="closeWeekPreview()" style="background:#3a3a3c; margin-top:14px;">Schließen</button>
+        </div>
+    </div>
+
+    <!-- ===================== ABRECHNUNG HINZUFÜGEN ===================== -->
+    <div id="addSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) closeAddSheet()">
+        <div class="add-sheet">
+            <h3>Abrechnung hinzufügen</h3>
+            <div id="quickAddChoices"></div>
+            <button onclick="closeAddSheet()" style="background:#3a3a3c;">Abbrechen</button>
+        </div>
+    </div>
+
+    <!-- ===================== SCHNELLEINGABE AUF START ===================== -->
+    <div id="startQuickAddSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) closeStartQuickAdd()">
+        <div class="add-sheet" style="max-height:88vh;overflow:auto;">
+            <div id="startQuickAddHost"></div>
+            <button onclick="closeStartQuickAdd()" style="background:#3a3a3c;margin-top:10px;">Abbrechen</button>
+        </div>
+    </div>
+
+    <!-- ===================== REISE FÜR AUSGABE AUSWÄHLEN ===================== -->
+    <div id="reiseAuswahlSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) closeReiseAuswahlSheet()">
+        <div class="add-sheet">
+            <h3>Reise auswählen</h3>
+            <div id="reiseAuswahlChoices"></div>
+            <button onclick="closeReiseAuswahlSheet()" style="background:#3a3a3c;">Abbrechen</button>
+        </div>
+    </div>
+
+    <!-- ===================== AUSGABE VERSCHIEBEN ===================== -->
+    <div id="moveSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) closeMoveSheet()">
+        <div class="add-sheet">
+            <h3 id="moveSheetTitle">Eintrag verschieben</h3>
+            <div id="moveSheetChoices"></div>
+            <button onclick="closeMoveSheet()" style="background:#3a3a3c;">Abbrechen</button>
+        </div>
+    </div>
+
+    <!-- ===================== SPAREN & INVESTIEREN ===================== -->
+    <div id="sparenInvestierenView" class="hidden">
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openUebersicht()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Sparen & Investieren</h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('sparenInvestierenAddPanel','sparenInvestierenBetrag')" aria-label="Sparbetrag hinzufügen">＋</button>
+            </div>
+
+            <div id="sparenInvestierenAddPanel" class="category-add-panel hidden">
+                <h3>Betrag festlegen</h3>
+                <select id="sparenInvestierenTyp">
+                    <option value="investieren">📈 Investieren</option>
+                    <option value="sparen">💰 Rücklage / Sparen</option>
+                </select>
+                <input id="sparenInvestierenBetrag" type="text" inputmode="decimal" placeholder="Betrag pro Gehaltsperiode" enterkeyhint="next">
+                <input id="sparenInvestierenText" autocapitalize="words" placeholder="Beschreibung (optional)" enterkeyhint="next">
+                <label for="sparenInvestierenDatum" style="display:block; opacity:.75; margin:8px 0 2px; font-size:14px;">Gültig ab</label>
+                <input id="sparenInvestierenDatum" type="date">
+                <div class="info-text">Der Betrag wird ab dieser Gehaltsperiode bei jedem neuen Gehaltszeitraum berücksichtigt. Investitionen bleiben geschützt. Rücklagen dienen als Puffer, wenn dein Frei verfügbar aufgebraucht ist.</div>
+                <button onclick="addSparenInvestieren()" class="btn btn-primary">Speichern</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div id="sparenInvestierenZusammenfassung" class="bereich-week-info"></div>
+            <div id="sparenInvestierenListe"></div>
+            <button id="sparenInvestierenDeleteAllBtn" onclick="deleteAlleSparenInvestieren()" style="background:red;margin-top:14px;">🗑️ Alles löschen</button>
+        </div>
+    </div>
+
+    <!-- ===================== GEPLANTE AUSGABEN ===================== -->
+    <div id="geplanteAusgabenView" class="hidden">
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openUebersicht()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Geplante Ausgaben</h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('geplantAddPanel','geplantText')" aria-label="Geplante Ausgabe hinzufügen">＋</button>
+            </div>
+
+            <div id="geplantAddPanel" class="category-add-panel hidden">
+                <h3>Ausgabe planen</h3>
+                <input id="geplantText" autocapitalize="words" placeholder="Beschreibung" enterkeyhint="next">
+                <input id="geplantBetrag" type="text" inputmode="decimal" placeholder="Betrag" enterkeyhint="next">
+                <label for="geplantDatum" style="display:block; opacity:.75; margin:8px 0 2px; font-size:14px;">Geplantes Datum</label>
+                <input id="geplantDatum" type="date">
+                <label for="geplantWiederholung" style="display:block; opacity:.75; margin:8px 0 2px; font-size:14px;">Wiederholung</label>
+                <select id="geplantWiederholung">
+                    <option value="einmalig">Einmalig</option>
+                    <option value="monatlich">Monatlich</option>
+                    <option value="jaehrlich">Jährlich</option>
+                </select>
+                <label for="geplantBereich" style="display:block; opacity:.75; margin:8px 0 2px; font-size:14px;">Später buchen nach</label>
+                <select id="geplantBereich" onchange="updateGeplantBereichUI(true)">
+                    <option value="haushalt">Haushalt</option>
+                    <option value="freizeit">Freizeit</option>
+                    <option value="reisen">Reisen</option>
+                </select>
+                <div id="geplantReiseWrap" class="hidden">
+                    <label for="geplantReise" style="display:block; opacity:.75; margin:8px 0 2px; font-size:14px;">Reise</label>
+                    <select id="geplantReise" onchange="updateGeplantKategorieSelect()"></select>
+                </div>
+                <label for="geplantKategorie" style="display:block; opacity:.75; margin:8px 0 2px; font-size:14px;">Kategorie</label>
+                <select id="geplantKategorie"></select>
+                <label for="geplantBudgetWirksam" style="display:block; opacity:.75; margin:8px 0 2px; font-size:14px;">Vom Frei verfügbar abziehen?</label>
+                <select id="geplantBudgetWirksam">
+                    <option value="ja">Ja, Betrag reservieren</option>
+                    <option value="nein">Nein, nur vormerken</option>
+                </select>
+                <div id="geplantBudgetHinweis" class="info-text">Der Betrag wird im Gehaltszeitraum des geplanten Datums reserviert. Ab dem Folgetag wird er automatisch als echte Ausgabe übernommen. Monatliche und jährliche Einträge werden danach auf den nächsten Termin gesetzt.</div>
+                <button onclick="addGeplanteAusgabe()" class="btn btn-primary">Planen</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div id="geplantZusammenfassung" class="bereich-week-info"></div>
+            <div id="geplantListe"></div>
+            <button id="geplantDeleteAllBtn" onclick="deleteAlleGeplanteAusgaben()" style="background:red;margin-top:14px;">🗑️ Alles löschen</button>
+        </div>
+    </div>
+
+    <!-- ===================== REISEN ===================== -->
+    <div id="reisen" class="hidden">
+
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openUebersicht()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Reisen</h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('reisenAddPanel','landInput')" aria-label="Reise hinzufügen">＋</button>
+            </div>
+
+            <div id="reisenAddPanel" class="category-add-panel hidden">
+                <h3>Reise hinzufügen</h3>
+                <input id="landInput" autocapitalize="words" placeholder="Neues Land" enterkeyhint="next" oninput="updateNewReiseCurrencySuggestion()">
+                <div class="reise-currency-field">
+                    <label for="landCurrency">Währung nach Land auswählen</label>
+                    <select id="landCurrency" onchange="markNewReiseCurrencyManual()"><option value="">Währung wählen</option></select>
+                    <div id="landCurrencyHint" class="reise-currency-note">Bitte die passende Währung auswählen.</div>
+                </div>
+                <input id="landBudget" type="text" inputmode="decimal" placeholder="Budget in Euro (optional)" enterkeyhint="next">
+                <div class="date-range">
+                    <div class="date-field">
+                        <label for="landVon">Von</label>
+                        <input id="landVon" type="date" aria-label="Reisebeginn">
+                    </div>
+                    <div class="date-field">
+                        <label for="landBis">Bis</label>
+                        <input id="landBis" type="date" aria-label="Reiseende">
+                    </div>
+                </div>
+                <button onclick="addLand()" class="btn btn-primary">Reise hinzufügen</button>
+            </div>
+
+            <input id="reisenSuche" class="list-search" type="search" placeholder="🔎 Reisen durchsuchen" oninput="renderLaender()">
+            <div id="laenderListe"></div>
+        </div>
+    </div>
+
+    <!-- ===================== LAND ===================== -->
+    <div id="land" class="hidden">
+
+        <div class="container">
+
+            <div class="category-topbar">
+                <button class="back-btn" onclick="backToReisen()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 id="landTitel"></h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('reiseAddPanel','betrag'); setTimeout(() => applyLetzteReiseKategorie(true), 30)" aria-label="Reiseausgabe hinzufügen">＋</button>
+            </div>
+
+            <div id="reiseBudgetCard"></div>
+
+            <div id="reiseAddPanel" class="category-add-panel hidden">
+                <h3>Reiseausgabe hinzufügen</h3>
+                <div id="reiseAmountInputRow" class="reise-amount-input-row"><input id="betrag" oninput="updateReiseAmountPreview()" type="text" inputmode="decimal" placeholder="Betrag" enterkeyhint="next"><button id="reiseInputCurrencyToggle" type="button" onclick="toggleReiseInputCurrency()" aria-label="Eingabewährung wechseln">EUR ⇄</button></div>
+                <div id="reiseAmountPreview" class="reise-amount-preview" role="status" aria-live="polite"></div>
+                <div class="quick-category-grid" id="reiseKategorieGrid">
+                    <button class="quick-category-btn selected" data-category="Essen / Trinken" onclick="setReiseKategorie('Essen / Trinken',this)">🍽️ Essen / Trinken</button>
+                    <button class="quick-category-btn" data-category="Transport" onclick="setReiseKategorie('Transport',this)">🚆 Transport</button>
+                    <button class="quick-category-btn" data-category="Unterkunft" onclick="setReiseKategorie('Unterkunft',this)">🏨 Unterkunft</button>
+                    <button class="quick-category-btn" data-category="Aktivität" onclick="setReiseKategorie('Aktivität',this)">🎯 Aktivität</button>
+                    <button class="quick-category-btn" data-category="Einkauf" onclick="setReiseKategorie('Einkauf',this)">🛒 Einkauf</button>
+                    <button class="quick-category-btn" data-category="Sonstiges" onclick="setReiseKategorie('Sonstiges',this)">🎉 Sonstiges</button>
+                </div>
+                <select id="kategorieSelect" class="hidden" aria-hidden="true"></select>
+                <input id="text" autocapitalize="words" placeholder="Genauere Beschreibung (optional)" enterkeyhint="next">
+                <div class="entry-date-time"><label><span>Datum</span><input id="datum" type="date"></label><div id="reiseUhrzeitWrap" class="entry-time-field"><label for="reiseUhrzeit">Uhrzeit (optional)</label><div class="entry-time-input"><input id="reiseUhrzeit" type="time" step="60" aria-label="Uhrzeit (optional)" title="Ortszeit dieses Geräts"><button type="button" class="entry-time-clear" aria-label="Uhrzeit entfernen" onclick="clearEntryTime(this.previousElementSibling.id,event)">×</button></div></div></div>
+                <button onclick="addEintrag()" class="btn btn-primary">Hinzufügen</button>
+                <button onclick="toggleCategoryAdd('reiseAddPanel')" class="btn" style="background:#3a3a3c;margin-top:10px;">Abbrechen</button>
+            </div>
+
+        </div>
+
+        <div class="container">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;">
+                <div>
+                    <h3 style="margin:0 0 4px;">Ausgaben nach Kategorie</h3>
+                    <div style="font-size:13px;opacity:.65;">Kategorie antippen, um die Einträge aufzuklappen.</div>
+                </div>
+            </div>
+            <div id="kategorienUebersicht"></div>
+            <button id="reiseKategorieHinzufuegen" type="button" class="link-button" onclick="addKategorie()" style="display:inline-flex;align-items:center;width:auto;min-height:44px;margin:6px 0 0;padding:8px 0;background:transparent;color:var(--primary);font-size:17px;font-weight:500;text-align:left;">＋ Kategorie hinzufügen</button>
+        </div>
+
+        <div class="container">
+            <button id="reiseDeleteAllBtn" onclick="clearLand()" style="background:red;">
+                🗑️ Alle Kosten löschen
+            </button>
+        </div>
+
+    </div>
+
+    <!-- ===================== Versicherungen ===================== -->
+    <div id="versicherungenView" class="hidden">
+
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openUebersicht()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Versicherungen</h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('versAddPanel','versName')" aria-label="Versicherung hinzufügen">＋</button>
+            </div>
+
+            <div id="versAddPanel" class="category-add-panel hidden">
+                <h3>Versicherung hinzufügen</h3>
+                <input id="versName" autocapitalize="words" placeholder="Versicherung" enterkeyhint="next">
+                <input id="versBetrag" type="text" inputmode="decimal" placeholder="Betrag" enterkeyhint="next">
+                <input id="versDatum" type="date">
+                <input id="versAnbieter" autocapitalize="words" placeholder="Anbieter" enterkeyhint="next">
+                <input id="versNummer" autocapitalize="words" placeholder="Versicherungsnummer" enterkeyhint="next">
+
+                <select id="versIntervall">
+                    <option value="monatlich">Monatlich</option>
+                    <option value="vierteljährlich">Vierteljährlich</option>
+                    <option value="halbjährlich">Halbjährlich</option>
+                    <option value="jährlich">Jährlich</option>
+                </select>
+
+                <select id="versMonat">
+                    <option value="1">Januar</option>
+                    <option value="2">Februar</option>
+                    <option value="3">März</option>
+                    <option value="4">April</option>
+                    <option value="5">Mai</option>
+                    <option value="6">Juni</option>
+                    <option value="7">Juli</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11">November</option>
+                    <option value="12">Dezember</option>
+                </select>
+
+                <button onclick="addVersicherung()" class="btn btn-primary">Hinzufügen</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <input id="versicherungenSuche" class="list-search" type="search" placeholder="🔎 Versicherungen durchsuchen" oninput="renderVersicherungen()">
+            <div id="versicherungenListe"></div>
+            <div class="total" id="versicherungenGesamt"></div>
+            <div id="versicherungenFooter"></div>
+        </div>
+        <div class="container">
+            <button id="versicherungenDeleteAllBtn" onclick="deleteAlleVersicherungen()" style="background:red;">🗑️ Alle Versicherungen löschen</button>
+        </div>
+
+    </div>
+
+    <!-- ===================== Haushalt ===================== -->
+    <div id="haushaltView" class="hidden">
+
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openUebersicht()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Haushalt</h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('hausAddPanel','hausBetrag')" aria-label="Haushaltsausgabe hinzufügen">＋</button>
+            </div>
+
+            <div id="hausAddPanel" class="category-add-panel hidden">
+                <h3>Haushaltsausgabe hinzufügen</h3>
+                <input id="hausBetrag" type="text" inputmode="decimal" placeholder="Betrag" enterkeyhint="next">
+                <div class="quick-category-grid" id="hausKategorieGrid">
+                    <button class="quick-category-btn selected" data-category="Einkauf" onclick="setQuickCategory('haus','Einkauf',this)">🛒 Einkauf</button>
+                    <button class="quick-category-btn" data-category="Tanken" onclick="setQuickCategory('haus','Tanken',this)">⛽ Tanken</button>
+                    <button class="quick-category-btn" data-category="Drogerie" onclick="setQuickCategory('haus','Drogerie',this)">🧴 Drogerie</button>
+                    <button class="quick-category-btn" data-category="Sonstiges" onclick="setQuickCategory('haus','Sonstiges',this)">🏠 Sonstiges</button>
+                </div>
+                <input id="hausKategorie" type="hidden" value="Einkauf">
+                <input id="hausText" autocapitalize="words" placeholder="Genauere Beschreibung (optional)" enterkeyhint="next">
+                <div class="entry-date-time"><label><span>Datum</span><input id="hausDatum" type="date"></label><div id="hausUhrzeitWrap" class="entry-time-field"><label for="hausUhrzeit">Uhrzeit (optional)</label><div class="entry-time-input"><input id="hausUhrzeit" type="time" step="60" aria-label="Uhrzeit (optional)" title="Ortszeit dieses Geräts"><button type="button" class="entry-time-clear" aria-label="Uhrzeit entfernen" onclick="clearEntryTime(this.previousElementSibling.id,event)">×</button></div></div></div>
+                <button onclick="addHaushalt()" class="btn btn-primary">Hinzufügen</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="bereich-week-info">
+                <div class="bereich-week-info-top">
+                    <span class="bereich-week-info-label">Diese Woche</span>
+                    <span id="haushaltWeekTotal" class="bereich-week-info-amount">0,00 €</span>
+                </div>
+                <div id="haushaltWeekBreakdown" class="bereich-week-info-breakdown">Noch keine Ausgaben diese Woche.</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+                <h3 style="margin:0;">Letzte 7 Tage</h3>
+                <button onclick="openAusgabenArchiv('haushalt')" style="width:auto; margin:0; padding:9px 12px; background:#3a3a3c;">📁 Alle Einträge</button>
+            </div>
+            <input id="haushaltSuche" class="list-search" type="search" placeholder="🔎 Letzte 7 Tage durchsuchen" oninput="renderHaushalt()">
+            <div id="haushaltListe"></div>
+        </div>
+
+        <div class="container">
+            <button id="haushaltDeleteAllBtn" onclick="deleteAlleHaushalt()" style="background:red;">🗑️ Alle Haushalt-Einträge löschen</button>
+        </div>
+
+    </div>
+
+    <!-- ===================== Freizeit ===================== -->
+    <div id="freizeitView" class="hidden">
+
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openUebersicht()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Freizeit</h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('freizeitAddPanel','freizeitBetrag')" aria-label="Freizeitausgabe hinzufügen">＋</button>
+            </div>
+
+            <div id="freizeitAddPanel" class="category-add-panel hidden">
+                <h3>Freizeitausgabe hinzufügen</h3>
+                <input id="freizeitBetrag" type="text" inputmode="decimal" placeholder="Betrag" enterkeyhint="next">
+                <div class="quick-category-grid" id="freizeitKategorieGrid">
+                    <button class="quick-category-btn selected" data-category="Essen / Trinken" onclick="setQuickCategory('freizeit','Essen / Trinken',this)">🍽️ Essen / Trinken</button>
+                    <button class="quick-category-btn" data-category="Aktivität" onclick="setQuickCategory('freizeit','Aktivität',this)">🎯 Aktivität</button>
+                    <button class="quick-category-btn" data-category="Geschenke" onclick="setQuickCategory('freizeit','Geschenke',this)">🎁 Geschenke</button>
+                    <button class="quick-category-btn" data-category="Sonstiges" onclick="setQuickCategory('freizeit','Sonstiges',this)">🎉 Sonstiges</button>
+                </div>
+                <input id="freizeitKategorie" type="hidden" value="Essen / Trinken">
+                <input id="freizeitText" autocapitalize="words" placeholder="Genauere Beschreibung (optional)" enterkeyhint="next">
+                <div class="entry-date-time"><label><span>Datum</span><input id="freizeitDatum" type="date"></label><div id="freizeitUhrzeitWrap" class="entry-time-field"><label for="freizeitUhrzeit">Uhrzeit (optional)</label><div class="entry-time-input"><input id="freizeitUhrzeit" type="time" step="60" aria-label="Uhrzeit (optional)" title="Ortszeit dieses Geräts"><button type="button" class="entry-time-clear" aria-label="Uhrzeit entfernen" onclick="clearEntryTime(this.previousElementSibling.id,event)">×</button></div></div></div>
+                <button onclick="addFreizeit()" class="btn btn-primary">Hinzufügen</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="bereich-week-info">
+                <div class="bereich-week-info-top">
+                    <span class="bereich-week-info-label">Diese Woche</span>
+                    <span id="freizeitWeekTotal" class="bereich-week-info-amount">0,00 €</span>
+                </div>
+                <div id="freizeitWeekBreakdown" class="bereich-week-info-breakdown">Noch keine Ausgaben diese Woche.</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+                <h3 style="margin:0;">Letzte 7 Tage</h3>
+                <button onclick="openAusgabenArchiv('freizeit')" style="width:auto; margin:0; padding:9px 12px; background:#3a3a3c;">📁 Alle Einträge</button>
+            </div>
+            <input id="freizeitSuche" class="list-search" type="search" placeholder="🔎 Letzte 7 Tage durchsuchen" oninput="renderFreizeit()">
+            <div id="freizeitListe"></div>
+        </div>
+
+        <div class="container">
+            <button id="freizeitDeleteAllBtn" onclick="deleteAlleFreizeit()" style="background:red;">🗑️ Alle Freizeit-Einträge löschen</button>
+        </div>
+
+    </div>
+
+    <!-- ===================== Haushalt / Freizeit Archiv ===================== -->
+    <div id="ausgabenArchivView" class="hidden">
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="closeAusgabenArchiv()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2 id="ausgabenArchivTitel">Alle Einträge</h2>
+                <span style="width:44px;"></span>
+            </div>
+            <input id="ausgabenArchivSuche" class="list-search" type="search" placeholder="🔎 Alle Einträge durchsuchen" oninput="renderAusgabenArchiv()">
+            <div id="ausgabenArchivListe"></div>
+        </div>
+    </div>
+
+    <!-- ===================== Einnahmen ===================== -->
+    <div id="einnahmenView" class="hidden">
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openUebersicht()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Einnahmen</h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('einnahmenAddPanel','einnahmenText')" aria-label="Einnahme hinzufügen">＋</button>
+            </div>
+
+            <div id="einnahmenAddPanel" class="category-add-panel hidden">
+                <h3>Einnahme hinzufügen</h3>
+                <input id="einnahmenText" autocapitalize="words" placeholder="Bezeichnung (z. B. Bruder Handyvertrag)" enterkeyhint="next">
+                <input id="einnahmenBetrag" type="text" inputmode="decimal" min="0" step="0.01" placeholder="Betrag" enterkeyhint="next">
+                <input id="einnahmenVon" autocapitalize="words" placeholder="Von wem? (optional)" enterkeyhint="next">
+                <div class="entry-date-time"><label><span>Datum</span><input id="einnahmenDatum" type="date"></label><div id="einnahmenUhrzeitWrap" class="entry-time-field"><label for="einnahmenUhrzeit">Uhrzeit (optional)</label><div class="entry-time-input"><input id="einnahmenUhrzeit" type="time" step="60" aria-label="Uhrzeit (optional)" title="Ortszeit dieses Geräts"><button type="button" class="entry-time-clear" aria-label="Uhrzeit entfernen" onclick="clearEntryTime(this.previousElementSibling.id,event)">×</button></div></div></div>
+                <select id="einnahmenWiederholung" onchange="toggleIncomeTime('einnahmenWiederholung','einnahmenUhrzeitWrap')">
+                    <option value="einmalig">Einmalig</option>
+                    <option value="monatlich">Monatlich</option>
+                </select>
+                <div class="info-text">Bei „Monatlich“ wird die Einnahme ab dem gewählten Datum jeden Monat im Budget berücksichtigt.</div>
+                <button onclick="addEinnahme()" class="btn btn-primary">Hinzufügen</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="total" id="einnahmenGesamt" style="margin:0 0 14px;"></div>
+            <input id="einnahmenSuche" class="list-search" type="search" placeholder="🔎 Aktuelle und monatliche Einnahmen durchsuchen" oninput="renderEinnahmen()">
+            <div id="einnahmenListe"></div>
+        </div>
+
+        <div class="container">
+            <button id="einnahmenDeleteAllBtn" onclick="deleteAlleEinnahmen()" style="background:red;">🗑️ Alle Einnahmen löschen</button>
+        </div>
+    </div>
+
+    <!-- ===================== Laufende Kosten ===================== -->
+    <div id="kostenView" class="hidden">
+
+        <div class="container">
+            <div class="category-topbar">
+                <button class="back-btn" onclick="openUebersicht()" aria-label="Zurück"><span class="back-icon"></span></button>
+                <h2>Fixkosten</h2>
+                <button class="category-add-btn" onclick="toggleCategoryAdd('kostenAddPanel','costText')" aria-label="Fixkosten hinzufügen">＋</button>
+            </div>
+            <div id="kostenAddPanel" class="category-add-panel hidden">
+                <h3>Fixkosten hinzufügen</h3>
+
+            <input id="costText" autocapitalize="words" placeholder="Beschreibung" enterkeyhint="next">
+            <input id="costBetrag" type="text" inputmode="decimal" placeholder="Betrag" enterkeyhint="next">
+            <input id="costInfo" autocapitalize="words" placeholder="Info (z. B. Kundennummer, Vertragsnummer)" enterkeyhint="next">
+            <label for="costHaendler" style="display:block; opacity:0.75; margin-top:8px; font-size:14px;">Anbieter (optional)</label>
+            <input id="costHaendler" autocapitalize="off" placeholder="z. B. Telekom oder Netflix" enterkeyhint="next">
+            <div class="info-text">Name aus der Zahlungsmitteilung. Mehrere Namen mit einem Semikolon trennen.</div>
+            <label for="costZuordnungTage" style="display:block; opacity:0.75; margin-top:8px; font-size:14px;">Zeitfenster zur Fälligkeit (± Tage)</label>
+            <input id="costZuordnungTage" type="number" inputmode="numeric" min="0" max="31" step="1" value="5" enterkeyhint="next">
+            <div class="info-text">Vorbereitung für die Push-Erfassung: 5 bedeutet bis zu 5 Tage vor oder nach der Fälligkeit.</div>
+
+            <label for="costDatum" style="display:block; opacity:0.75; margin-top:8px; font-size:14px;">
+                Erste Abbuchung
+            </label>
+            <input id="costDatum" type="date">
+            <div class="info-text">🔁 Wird ab diesem Datum jeden Monat automatisch berücksichtigt.</div>
+
+            <button onclick="addKosten()" class="btn btn-primary">Hinzufügen</button>
+            </div>
+
+            <input id="fixkostenSuche" class="list-search" type="search" placeholder="🔎 Fixkosten durchsuchen" oninput="renderLaufendeKosten()">
+        </div>
+
+        <div class="container">
+            <div id="kostenListe"></div>
+            <div class="total" id="kostenGesamt"></div>
+        </div>
+
+        <div class="container">
+            <button id="fixkostenDeleteAllBtn" onclick="deleteAlleLaufendeKosten()" style="background:red;">
+                🗑️ Alle Fixkosten löschen
+            </button>
+        </div>
+
+    </div>
+
+
+    <script src="./js/core/dateninitialisierung.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+    <script src="./js/core/speicherung-backup.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/rueckgaengig.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/erinnerungen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/core/formatierung.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/budget/gehalt.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/navigation.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/eintragsaktionen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/einstellungen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/archiv.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/budget/wochenbudget.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/schnelleingabe.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/geplante-ausgaben.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/sparen-investieren.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/reise-waehrung.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/reise-budget-kurs.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/reisen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/fixkosten.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/listen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/versicherungen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/budget/berechnungen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/verschieben.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/einnahmen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/haushalt.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/freizeit.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/formulare.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/kategorien/alltag-gemeinsam.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/ausgabenarchiv.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/budget/faelligkeiten.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/budget/zeitraeume.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/budget/uebersicht.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/grafik/diagramme.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/ui/reiseansicht.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/app/aktualisierung.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/app/start.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+
+
+    <div id="undoToast" class="undo-toast hidden" role="status" aria-live="polite">
+        <span id="undoToastText">Eintrag gelöscht</span>
+        <button type="button" onclick="undoDelete()">↩️ Rückgängig</button>
+    </div>
+
+
+<dialog id="pageInfoDialog" class="app-dialog" aria-labelledby="pageInfoTitle">
+    <div class="page-info-heading"><h2 id="pageInfoTitle" tabindex="-1">Informationen</h2><button class="page-info-button" type="button" onclick="closePageInfo()" aria-label="Informationen schließen">×</button></div>
+    <div id="pageInfoContent" class="page-info-content"></div>
+    <button type="button" onclick="closePageInfo()">Verstanden</button>
+</dialog>
+<dialog id="serverRestoreDialog" class="app-dialog" aria-labelledby="serverRestoreTitle" aria-describedby="serverRestoreDescription">
+    <h2 id="serverRestoreTitle" tabindex="-1">Deine gespeicherten Daten sind da</h2>
+    <p id="serverRestoreDescription">Stelle deine bisherigen Einträge auf diesem Gerät wieder her. Danach werden neue Zahlungen automatisch übernommen.</p>
+    <p class="action-notice">Dabei werden die aktuellen Daten auf diesem Gerät ersetzt. Lokale Einträge vorher bei Bedarf unter Backup sichern.</p>
+    <p id="serverRestoreError" role="alert"></p>
+    <button id="serverRestoreConfirm" type="button" onclick="restoreTestServerBackup(true)">Daten wiederherstellen</button>
+    <button id="serverRestoreLater" class="neutral-button" type="button" onclick="closeServerRestorePrompt()">Später</button>
+</dialog>
+
+    <!-- ===== UPDATE: SWIPE NACH LINKS FUER EINTRAG-AKTIONEN ===== -->
+    <link rel="stylesheet" href="./css/bedienung.css?v=travel-icons-v1" media="print" data-app-style onload="this.dataset.loaded='true'" onerror="this.dataset.failed='true'">
+    <script src="./js/ui/wischgesten.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+
+    <script src="./js/ui/zurueckwischen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+
+<dialog id="paymentReviewDialog" class="payment-review-dialog" aria-labelledby="paymentReviewHeading" aria-describedby="paymentReviewRemaining" aria-modal="true" closedby="none">
+  <h2 id="paymentReviewHeading" tabindex="-1">Zahlungen prüfen</h2>
+  <p id="paymentReviewRemaining" class="settings-note"></p>
+  <div id="paymentReviewError" role="alert" class="payment-review-error"></div>
+  <div id="serverPaymentReview"></div>
+</dialog>
+<script src="./js/server/haendler.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/server/reise-zahlungen.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<script src="./js/server/synchronisierung.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+<div id="paymentImportedNotice" role="status" aria-live="polite" aria-atomic="true"></div>
+    <!-- Gemeinsame Navigation in Kategorien (aus der Übersicht) -->
+    <nav id="categoryBottomNav" class="bottom-nav hidden" aria-label="Hauptnavigation in Kategorien">
+        <button type="button" onclick="goHome()"><span class="nav-icon">🏠</span>Start</button>
+        <button type="button" class="active" aria-current="page" onclick="openUebersicht()"><span class="nav-icon">📋</span>Übersicht</button>
+        <button type="button" onclick="openGrafik()"><span class="nav-icon">📊</span>Grafik</button>
+    </nav>
+<script src="./js/ui/ansicht-speichern.js?v=travel-icons-v1" type="application/x-kostentracker"></script>
+</body>
+
+</html>
