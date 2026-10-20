@@ -1,7 +1,6 @@
 Kostentracker.module({
   "id": "js/kategorien/versicherungen.js",
   "dependencies": [
-    "appendEmptyAction",
     "addItem",
     "appendDateGroupHeader",
     "beginUndoDelete",
@@ -115,7 +114,6 @@ Kostentracker.module({
 
             if (context.repository.view.Versicherungen.length === 0) {
                 div.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🛡️</div><div class="empty-state-title">Noch keine Versicherungen</div><div class="empty-state-text">Neue Versicherungen und ihre Zahlungsintervalle werden hier gesammelt.</div></div>`;
-                if(!dependencies.getSearchTerm('versicherungenSuche'))dependencies.appendEmptyAction(div,'versicherungen');
             }
 
             const suche = dependencies.getSearchTerm("versicherungenSuche");
